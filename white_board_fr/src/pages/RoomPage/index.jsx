@@ -1,5 +1,6 @@
 import { useState } from "react";
 import "./index.css";
+import WhiteBoard from "../../components/Whiteboard";
 
 const RoomPage = () => {
 
@@ -7,7 +8,7 @@ const RoomPage = () => {
     const [color, setColor] = useState("black");
     return (
         <div className="row">
-            <h1 className="text-center py-5">White Board Sharing App</h1>
+            <h1 className="text-center py-4">White Board Sharing App<span className="text-primary">[Users Online: 0]</span></h1>
             <div className="col-md-12 gap-3 mt-4 mb-5 d-flex align-items-center justify-content-between ">
                 <div className="d-flex col-md-2  justify-content-center-between gap-3">
                     <div className="d-flex gap-1 align-items-center">
@@ -17,6 +18,7 @@ const RoomPage = () => {
                         type="radio"
                         name="tool"
                         id="pencil"
+                        checked={tool==="pencil"}
                         value="pencil"
                         className="mt-1"
                         onChange={(e) => setTool(e.target.value)} />
@@ -28,6 +30,7 @@ const RoomPage = () => {
                         type="radio"
                         name="tool"
                         id="line"
+                        checked={tool==="line"}
                         value="line"
                         className="mt-1"
                         onChange={(e) => setTool(e.target.value)} />
@@ -39,6 +42,7 @@ const RoomPage = () => {
                         type="radio"
                         name="tool"
                         id="rect"
+                        checked={tool==="rect"}
                         value="rect"
                         onChange={(e) => setTool(e.target.value)} />
 
@@ -67,6 +71,10 @@ const RoomPage = () => {
 
                 </div>
 
+            </div>
+
+            <div className="col-md-10 mx-auto mt-4 canvas-box ">
+                <WhiteBoard/>
             </div>
 
         </div>
