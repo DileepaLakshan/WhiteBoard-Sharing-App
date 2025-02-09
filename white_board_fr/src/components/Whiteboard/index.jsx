@@ -1,79 +1,73 @@
-import { useEffect, useRef, useState, } from "react";
+import { useEffect, useState, useLayoutEffect } from "react";
 import rough from "roughjs";
 
 const roughGenerator = rough.generator();
 
-
-const WhiteBoard = ({
-  canvasRef,
-  ctxRef,
-  elements,
-  setElements
-}) => {
-
+const WhiteBoard = ({ canvasRef, ctxRef, elements, setElements }) => {
   const [isDrawing, setIsDrawing] = useState(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
-
     ctxRef.current = ctx;
   }, []);
+
+  useLayoutEffect(() => {
+    const roughCanvas = rough.canvas(canvasRef.current);
+    elements.forEach((element) => {
+      roughCanvas.linearPath(element.path);
+    });
+  }, [elements]);
 
   const handleMouseDown = (e) => {
     const { offsetX, offsetY } = e.nativeEvent;
 
-    setElements((prevElements)=>[
+    setElements((prevElements) => [
       ...prevElements,
       {
         type: "pencil",
         offsetX,
         offsetY,
-        Path: [[offsetX, offsetY]],
-        storke: "black",
-
-
+        path: [[offsetX, offsetY]], // ✅ Fix: Changed 'Path' to 'path'
+        stroke: "black",
       },
-    ])
-    
+    ]);
 
     setIsDrawing(true);
   };
 
   const handleMouseMove = (e) => {
+    if (!isDrawing) return;
+
     const { offsetX, offsetY } = e.nativeEvent;
 
-    if (isDrawing) {
+    setElements((prevElements) => {
+      return prevElements.map((ele, index) => {
+        if (index === prevElements.length - 1) {
+          return {
+            ...ele,
+            path: [...ele.path, [offsetX, offsetY]], // ✅ Fix: Ensured 'path' exists
+          };
+        } else {
+          return ele;
+        }
+      });
+    });
+  };
 
-      //pencil by default as static
-      const {path} = elements[elements.length -1];
-      const newPath = [...path, [offsetX, offsetY]];
-
-      setElements((prevElements))
-
-    }
-
-  }
-
-  const handleMouseUp = (e) => {
+  const handleMouseUp = () => {
     setIsDrawing(false);
-  }
+  };
 
   return (
-    <>
-      {JSON.stringify(elements)}
-      <canvas
-        ref={canvasRef}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        className="border border-dark border-3 h-100 w-100"
-
-      ></canvas>
-    </>
+    <canvas
+      ref={canvasRef}
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      className="border border-dark border-3 h-100 w-100"
+    ></canvas>
   );
 };
 
 export default WhiteBoard;
-
-
