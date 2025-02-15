@@ -3,54 +3,119 @@ import rough from "roughjs";
 
 const roughGenerator = rough.generator();
 
-const WhiteBoard = ({ canvasRef, ctxRef, elements, setElements }) => {
+const WhiteBoard = ({ canvasRef, ctxRef, elements = [], setElements, tool }) => { // ✅ Ensured elements is always an array
   const [isDrawing, setIsDrawing] = useState(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
+    canvas.height = window.innerHeight * 2;
+    canvas.width = window.innerWidth * 2;
+
     const ctx = canvas.getContext("2d");
     ctxRef.current = ctx;
   }, []);
 
   useLayoutEffect(() => {
+    if (!elements || elements.length === 0) return; // ✅ Prevents accessing elements when undefined
+
     const roughCanvas = rough.canvas(canvasRef.current);
+    ctxRef.current.clearRect(
+      0,
+      0,
+      canvasRef.current.width,
+      canvasRef.current.height
+    );
+
     elements.forEach((element) => {
-      roughCanvas.linearPath(element.path);
+      if (element.type === "rect") {
+        roughCanvas.draw(
+          roughGenerator.rectangle(
+            element.offsetX,
+            element.offsetY,
+            element.width,
+            element.height
+          )
+        );
+      } else if (element.type === "line") {
+        roughCanvas.draw(
+          roughGenerator.line(
+            element.offsetX,
+            element.offsetY,
+            element.width,
+            element.height
+          )
+        );
+      } else if (element.type === "pencil") {
+        roughCanvas.linearPath(element.path || []); // ✅ Fallback to an empty array
+      }
     });
   }, [elements]);
 
   const handleMouseDown = (e) => {
     const { offsetX, offsetY } = e.nativeEvent;
 
-    setElements((prevElements) => [
-      ...prevElements,
-      {
-        type: "pencil",
-        offsetX,
-        offsetY,
-        path: [[offsetX, offsetY]], // ✅ Fix: Changed 'Path' to 'path'
-        stroke: "black",
-      },
-    ]);
+    if (tool === "pencil") {
+      setElements((prevElements) => [
+        ...prevElements,
+        {
+          type: "pencil",
+          offsetX,
+          offsetY,
+          path: [[offsetX, offsetY]],
+          stroke: "black",
+        },
+      ]);
+    } else if (tool === "line") {
+      setElements((prevElements) => [
+        ...prevElements,
+        {
+          type: "line",
+          offsetX,
+          offsetY,
+          width: offsetX,
+          height: offsetY,
+          stroke: "black",
+        },
+      ]);
+    } else if (tool === "rect") {
+      setElements((prevElements) => [
+        ...prevElements,
+        {
+          type: "rect",
+          offsetX,
+          offsetY,
+          width: 0,
+          height: 0,
+          stroke: "black",
+        },
+      ]);
+    }
 
     setIsDrawing(true);
   };
 
   const handleMouseMove = (e) => {
-    if (!isDrawing) return;
-
     const { offsetX, offsetY } = e.nativeEvent;
+
+    if (!isDrawing || elements.length === 0) return; // ✅ Prevent errors when elements is empty
 
     setElements((prevElements) => {
       return prevElements.map((ele, index) => {
         if (index === prevElements.length - 1) {
-          return {
-            ...ele,
-            path: [...ele.path, [offsetX, offsetY]], // ✅ Fix: Ensured 'path' exists
-          };
-        } else {
-          return ele;
+          if (tool === "pencil") {
+            return {
+              ...ele,
+              path: [...(ele.path || []), [offsetX, offsetY]], // ✅ Ensured 'path' exists
+            };
+          } else {
+            return {
+              ...ele,
+              width: offsetX,
+              height: offsetY,
+            };
+          }
         }
+        return ele;
       });
     });
   };
@@ -60,13 +125,14 @@ const WhiteBoard = ({ canvasRef, ctxRef, elements, setElements }) => {
   };
 
   return (
-    <canvas
-      ref={canvasRef}
+    <div
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
-      className="border border-dark border-3 h-100 w-100"
-    ></canvas>
+      className="border border-dark border-3 h-100 w-100 overflow-hidden"
+    >
+      <canvas ref={canvasRef} />
+    </div>
   );
 };
 
