@@ -3,17 +3,25 @@ import rough from "roughjs";
 
 const roughGenerator = rough.generator();
 
-const WhiteBoard = ({ canvasRef, ctxRef, elements = [], setElements, tool }) => { // ✅ Ensured elements is always an array
+const WhiteBoard = ({ canvasRef, ctxRef, elements = [], setElements, tool, color }) => { // ✅ Ensured elements is always an array
   const [isDrawing, setIsDrawing] = useState(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     canvas.height = window.innerHeight * 2;
     canvas.width = window.innerWidth * 2;
-
     const ctx = canvas.getContext("2d");
+
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+
     ctxRef.current = ctx;
   }, []);
+
+  useEffect(() => {
+    ctxRef.current.strokeStyle = color;
+  }, [color]);
 
   useLayoutEffect(() => {
     if (!elements || elements.length === 0) return; // ✅ Prevents accessing elements when undefined
@@ -33,7 +41,14 @@ const WhiteBoard = ({ canvasRef, ctxRef, elements = [], setElements, tool }) => 
             element.offsetX,
             element.offsetY,
             element.width,
-            element.height
+            element.height,
+            {
+              stroke: element.stroke,
+              strokeWidth: 5,
+              roughness: 0
+
+
+            }
           )
         );
       } else if (element.type === "line") {
@@ -42,11 +57,23 @@ const WhiteBoard = ({ canvasRef, ctxRef, elements = [], setElements, tool }) => 
             element.offsetX,
             element.offsetY,
             element.width,
-            element.height
+            element.height,
+            {
+              stroke: element.stroke,
+              strokeWidth: 5,
+              roughness: 0
+            }
           )
         );
       } else if (element.type === "pencil") {
-        roughCanvas.linearPath(element.path || []); // ✅ Fallback to an empty array
+        roughCanvas.linearPath(element.path || [],{
+          stroke: element.stroke,
+          strokeWidth: 5,
+          roughness: 0
+        }
+          
+
+        ); // ✅ Fallback to an empty array
       }
     });
   }, [elements]);
@@ -62,7 +89,7 @@ const WhiteBoard = ({ canvasRef, ctxRef, elements = [], setElements, tool }) => 
           offsetX,
           offsetY,
           path: [[offsetX, offsetY]],
-          stroke: "black",
+          stroke: color,
         },
       ]);
     } else if (tool === "line") {
@@ -74,7 +101,7 @@ const WhiteBoard = ({ canvasRef, ctxRef, elements = [], setElements, tool }) => 
           offsetY,
           width: offsetX,
           height: offsetY,
-          stroke: "black",
+          stroke: color,
         },
       ]);
     } else if (tool === "rect") {
@@ -86,7 +113,7 @@ const WhiteBoard = ({ canvasRef, ctxRef, elements = [], setElements, tool }) => 
           offsetY,
           width: 0,
           height: 0,
-          stroke: "black",
+          stroke: color,
         },
       ]);
     }
